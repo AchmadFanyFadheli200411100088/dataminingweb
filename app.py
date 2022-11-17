@@ -4,16 +4,31 @@ import pickle
 import os
 app = Flask(__name__)
 
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    if request.method == "POST":
-        pendapatan_setahun_juta = float(request.form['pendapatan_setahun_juta'])
-        durasi_pinjaman_bulan = float(request.form['durasi_pinjaman_bulan'])
-        jumlah_tanggungan = float(request.form['jumlah_tanggungan'])
-        TIDAK= float(request.form['TIDAK'])
-        YA= float(request.form['YA'])
-        inp_rata=float(request.form['inp_rata'])
+@app.route('/',methods = ['POST','GET'])
+def web():
+    if request.method == 'POST':
+        kpr = str(request.form['kpr'])
+        inp_rata = int(request.form['inp_rata'])
+        pendapatan = float(request.form['pendapatan'])
+        durasi = float(request.form['durasi'])
+        tanggungan = float(request.form['tanggungan'])
+        
+        #Kategori KPR
+        kpr1 = 0
+        kpr2 = 0
+        if(kpr == "Ya"):
+            kpr1 = 0
+            kpr2 = 1
+        elif(kpr == "Tidak"):
+            kpr1 = 1
+            kpr2 = 0
 
+        #Kategori Rata Rata
+        rata1 = 0
+        rata2 = 0
+        rata3 = 0
+        rata4 = 0
+        rata5 = 0        
         if(inp_rata <= 30):
             rata1 = 1
             rata2 = 0
@@ -49,17 +64,25 @@ def home():
             rata3 = 0
             rata4 = 0
             rata5 = 1
+        model_normalisasi_pendapatan = os.path.join('normalisasiPendapatan')
+        model_pendapatan = pickle.load(open(model_normalisasi_pendapatan,'rb'))
+        normal_pendapatan = model_pendapatan.transform([[pendapatan]])
 
-        val = np.array([pendapatan_setahun_juta, durasi_pinjaman_bulan, jumlah_tanggungan, TIDAK, YA, inp_rata])
+        model_normalisasi_durasi = os.path.join('normalisasiDurasi')
+        model_durasi = pickle.load(open(model_normalisasi_durasi,'rb'))
+        normal_durasi = model_durasi.transform([[durasi]])
+        
+        model_normalisasi_tanggungan = os.path.join('normalisasiTanggungan')
+        model_tanggungan = pickle.load(open(model_normalisasi_tanggungan,'rb'))
+        normal_tanggungan = model_tanggungan.transform([[tanggungan]])
 
-        final_features = [np.array(val)]
-        model_path = os.path.join('models', 'modelCreditScore.pkl')
+        inp = np.array([[kpr1,kpr2,rata1,rata2,rata3,rata4,rata5,normal_pendapatan,normal_durasi,normal_tanggungan]],dtype=object)
+        model_path = os.path.join('bayes.pickle')
         model = pickle.load(open(model_path, 'rb'))
-        res = model.predict(final_features)
-
-        return render_template('index.html', prediction_text=res)
+        prediksi = model.predict(inp)
+        str_prediksi = str(prediksi)
+        return render_template('index.html',hasil = str_prediksi)
     return render_template('index.html')
 
-
 if __name__ == "__main__":
-    app.run()
+    app.run(host='0.0.0.0')
