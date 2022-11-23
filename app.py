@@ -81,7 +81,7 @@ def web():
         model = pickle.load(open(model_path, 'rb'))
         prediksi = model.predict(inp)
         str_prediksi = str(prediksi)
-        return render_template('index.html',hasil = str_prediksi)
+        return render_template('index.html',df_new2 = str_prediksi)
     return render_template('index.html')
 
 if __name__ == "__main__":
